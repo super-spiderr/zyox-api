@@ -1,9 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-
-export enum UserRole {
-  ADMIN = "ADMIN",
-  STAFF = "STAFF",
-}
+import { UserRole } from "../constants/user.constant";
 
 export interface IUser extends Document {
   firstName: string;
@@ -70,5 +66,10 @@ const UserSchema = new Schema<IUser>(
       type: Date,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    collection: "z_users",
+  },
 );
+
+export const User = mongoose.model<IUser>("User", UserSchema);
