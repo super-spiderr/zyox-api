@@ -1,24 +1,24 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { createCustomerSchema, updateCustomerSchema } from "./customer.schema";
+import { createPackageSchema, updatePackageSchema } from "./package.schema";
 import {
-  createCustomer,
-  deleteCustomer,
-  getCustomers,
-  getCustomersById,
-  updateCustomer,
-} from "./customer.service";
+  createPackage,
+  deletePackage,
+  getPackageById,
+  getPackages,
+  updatePackage,
+} from "./package.service";
 
-export const createCustomerController = async (
+export const createPackageController = async (
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) => {
   try {
-    const body = createCustomerSchema.parse(request.body);
-    const customer = await createCustomer(body, request.user?.userId!);
+    const body = createPackageSchema.parse(request.body);
+    const newPackage = await createPackage(body, request.user?.userId as string);
     return reply.status(201).send({
       success: true,
-      message: "Customer created successfully",
-      data: customer,
+      message: "Package created successfully",
+      data: newPackage,
     });
   } catch (error) {
     return reply.status(400).send({
@@ -28,30 +28,21 @@ export const createCustomerController = async (
   }
 };
 
-export const getCustomersController = async (
+export const getPackagesController = async (
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) => {
   try {
-    const { id, page, limit, search } = request.query as {
-      id?: string;
+    const { page, limit, search } = request.query as {
       page: number;
       limit: number;
       search?: string;
     };
-
-    if (id) {
-      const customer = await getCustomersById(id);
-      return reply.status(200).send({
-        success: true,
-        data: customer,
-      });
-    }
-
-    const { customers, total } = await getCustomers(page, limit, search);
+    const { packages, total } = await getPackages(page, limit, search);
     return reply.status(200).send({
       success: true,
-      data: customers,
+      message: "Packages fetched successfully",
+      data: packages,
       pagination: {
         total,
         page,
@@ -67,17 +58,38 @@ export const getCustomersController = async (
   }
 };
 
-export const getCustomerByIdController = async (
+export const getPackageByIdController = async (
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const customer = await getCustomersById(id);
+    const pkg = await getPackageById(id);
+    return reply.status(200).send({
+      success: true,
+      message: "Package fetched successfully",
+      data: pkg,
+    });
+  } catch (error) {
+    return reply.status(400).send({
+      success: false,
+      message: error instanceof Error ? error.message : "Something went wrong",
+    });
+  }
+};
 
+export const updatePackageController = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  try {
+    const { id } = request.params as { id: string };
+    const body = updatePackageSchema.parse(request.body);
+    const pkg = await updatePackage(id, body);
     return reply.status(200).send({
       success: true,
-      data: customer,
+      message: "Package updated successfully",
+      data: pkg,
     });
   } catch (error) {
     return reply.status(400).send({
@@ -86,37 +98,18 @@ export const getCustomerByIdController = async (
     });
   }
 };
-export const updateCustomerController = async (
+
+export const deletePackageController = async (
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const body = updateCustomerSchema.parse(request.body);
-    const customer = await updateCustomer(id, body);
+    const pkg = await deletePackage(id);
     return reply.status(200).send({
       success: true,
-      message: "Customer updated successfully",
-      data: customer,
-    });
-  } catch (error) {
-    return reply.status(400).send({
-      success: false,
-      message: error instanceof Error ? error.message : "Something went wrong",
-    });
-  }
-};
-export const deleteCustomerController = async (
-  request: FastifyRequest,
-  reply: FastifyReply,
-) => {
-  try {
-    const { id } = request.params as { id: string };
-    const customer = await deleteCustomer(id);
-    return reply.status(200).send({
-      success: true,
-      message: "Customer deleted successfully",
-      data: customer,
+      message: "Package deleted successfully",
+      data: pkg,
     });
   } catch (error) {
     return reply.status(400).send({

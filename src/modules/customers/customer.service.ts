@@ -21,9 +21,23 @@ export const createCustomer = async (
   return customer;
 };
 
-export const getCustomers = async () => {
-  const customers = await Customer.find().sort({ createdAt: -1 });
-  return customers;
+export const getCustomers = async (page: number, limit: number, search?: string) => {
+  const query: any = {};
+  if (search) {
+    query.$or = [
+      { customerName: { $regex: search, $options: "i" } },
+      { phoneNumber: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const total = await Customer.countDocuments(query);
+  const customers = await Customer.find(query)
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
+
+  return { customers, total };
 };
 
 export const getCustomersById = async (customerId: string) => {

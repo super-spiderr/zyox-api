@@ -2,83 +2,83 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { protectedRoute } from "../../middleware/auth.middleware";
 import {
-  createCustomerController,
-  deleteCustomerController,
-  getCustomerByIdController,
-  getCustomersController,
-  updateCustomerController,
-} from "./customer.controller";
-import { createCustomerSchema, updateCustomerSchema } from "./customer.schema";
+  createProductController,
+  deleteProductController,
+  getProductByIdController,
+  getProductController,
+  updateProductController,
+} from "./product.controller";
+import { createProductSchema, updateProductSchema } from "./product.schema";
 import { paginationQuerySchema } from "../common/common.schema";
 
-export default async function customerRoutes(fastify: FastifyInstance) {
+export default async function productRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
     {
       preHandler: [protectedRoute],
       schema: {
-        tags: ["Customers"],
+        tags: ["Products"],
         security: [{ bearerAuth: [] }],
-        body: createCustomerSchema,
+        body: createProductSchema,
       },
     },
-    createCustomerController,
+    createProductController,
   );
   fastify.get(
     "/",
     {
       preHandler: [protectedRoute],
       schema: {
-        tags: ["Customers"],
+        tags: ["Products"],
         security: [{ bearerAuth: [] }],
         querystring: paginationQuerySchema.extend({
-          id: z.string().optional(),
+          categoryId: z.string().optional(),
         }),
       },
     },
-    getCustomersController,
+    getProductController,
   );
   fastify.get(
     "/:id",
     {
       preHandler: [protectedRoute],
       schema: {
-        tags: ["Customers"],
+        tags: ["Products"],
         security: [{ bearerAuth: [] }],
         params: z.object({
           id: z.string(),
         }),
       },
     },
-    getCustomerByIdController,
+    getProductByIdController,
   );
   fastify.put(
     "/:id",
     {
       preHandler: [protectedRoute],
       schema: {
-        tags: ["Customers"],
+        tags: ["Products"],
         security: [{ bearerAuth: [] }],
         params: z.object({
           id: z.string(),
         }),
-        body: updateCustomerSchema,
+        body: updateProductSchema,
       },
     },
-    updateCustomerController,
+    updateProductController,
   );
-  fastify.put(
-    "/:id/delete",
+  fastify.delete(
+    "/:id",
     {
       preHandler: [protectedRoute],
       schema: {
-        tags: ["Customers"],
+        tags: ["Products"],
         security: [{ bearerAuth: [] }],
         params: z.object({
           id: z.string(),
         }),
       },
     },
-    deleteCustomerController,
+    deleteProductController,
   );
 }
