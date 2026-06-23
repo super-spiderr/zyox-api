@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { loginSchema, registerSchema } from "./auth.schema";
-import { getUserById, login, registerAdmin } from "./auth.service";
+import { loginSchema, registerSchema, refreshSchema } from "./auth.schema";
+import { getUserById, login, registerAdmin, refreshTokens } from "./auth.service";
 
 export const register = async (
   request: FastifyRequest,
@@ -40,6 +40,7 @@ export const loginUser = async (
       data: {
         user: result.user,
         token: result.token,
+        refreshToken: result.refreshToken,
       },
     });
   } catch (error) {
@@ -66,6 +67,29 @@ export const getProfile = async (
     return reply.status(401).send({
       success: false,
       message: "Unauthorized",
+    });
+  }
+};
+
+export const handleRefreshToken = async (
+  request: FastifyRequest,
+  reply: FastifyReply,
+) => {
+  try {
+    const body = refreshSchema.parse(request.body);
+    const result = await refreshTokens(body.refreshToken);
+    return reply.status(200).send({
+      success: true,
+      message: "Token refreshed successfully",
+      data: {
+        token: result.token,
+        refreshToken: result.refreshToken,
+      },
+    });
+  } catch (error) {
+    return reply.status(401).send({
+      success: false,
+      message: error instanceof Error ? error.message : "Something went wrong",
     });
   }
 };

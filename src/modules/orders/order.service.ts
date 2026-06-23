@@ -1,55 +1,21 @@
-import { Order, IOrder, IOrderItem } from "../../models/order.model";
+import { Order } from "../../models/order.model";
 import { CreateOrderInput, UpdateOrderInput } from "./order.schema";
 import { getNextSequenceValue } from "../../models/counter.model";
 import { Customer } from "../../models/customer.model";
 import { Product } from "../../models/product.model";
 import { Package } from "../../models/package.model";
 import { OrderItemType, OrderStatus } from "../../constants/order.constant";
+import { calculateOrderTotals } from "./order.helper";
 
-// Helper to compute billing totals for an order
-const calculateOrderTotals = (
-  items: Array<{ type: OrderItemType; itemId: string; name: string; quantity: number; unitPrice: number }>,
-  discountAmountInput: number = 0,
-  advanceAmountInput: number = 0
-) => {
-  let subTotal = 0;
-  const orderItems: IOrderItem[] = items.map((item) => {
-    const totalPrice = item.quantity * item.unitPrice;
-    subTotal += totalPrice;
-    return {
-      type: item.type,
-      itemId: item.itemId,
-      itemModel: item.type === OrderItemType.PACKAGE ? "Package" : "Product",
-      name: item.name,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      totalPrice,
-    };
-  });
-
-  const totalAmount = Math.max(0, subTotal - discountAmountInput);
-  const balanceAmount = totalAmount - advanceAmountInput;
-
-  return {
-    orderItems,
-    subTotal,
-    discountAmount: discountAmountInput,
-    totalAmount,
-    advanceAmount: advanceAmountInput,
-    balanceAmount,
-  };
+const validateCustomerExists = async (customerId: string) => {
+  const customer = await Customer.findById(customerId);
+  if (!customer) throw new Error("Customer not found");
 };
 
-export const createOrder = async (
-  input: CreateOrderInput,
-  createdById: string
+const validateOrderItemsExist = async (
+  items: Array<{ type: OrderItemType; itemId: string }>,
 ) => {
-  // 1. Verify customer exists
-  const customer = await Customer.findById(input.customerId);
-  if (!customer) throw new Error("Customer not found");
-
-  // 2. Verify all items exist
-  for (const item of input.orderItems) {
+  for (const item of items) {
     if (item.type === OrderItemType.PRODUCT) {
       const prod = await Product.findById(item.itemId);
       if (!prod) throw new Error(`Product not found: ${item.itemId}`);
@@ -58,6 +24,17 @@ export const createOrder = async (
       if (!pkg) throw new Error(`Package not found: ${item.itemId}`);
     }
   }
+};
+
+export const createOrder = async (
+  input: CreateOrderInput,
+  createdById: string,
+) => {
+  // 1. Verify customer exists
+  await validateCustomerExists(input.customerId);
+
+  // 2. Verify all items exist
+  await validateOrderItemsExist(input.orderItems);
 
   // 3. Generate sequential order number
   const currentYear = new Date().getFullYear();
@@ -69,7 +46,7 @@ export const createOrder = async (
   const totals = calculateOrderTotals(
     input.orderItems,
     input.discountAmount || 0,
-    input.advanceAmount || 0
+    input.advanceAmount || 0,
   );
 
   // 5. Create Order
@@ -95,7 +72,7 @@ export const createOrder = async (
 export const getOrders = async (
   page: number,
   limit: number,
-  search?: string
+  search?: string,
 ) => {
   const query: any = {};
   if (search) {
@@ -139,28 +116,23 @@ export const updateOrder = async (id: string, input: UpdateOrderInput) => {
 
   // If customer is updated, verify it exists
   if (input.customerId) {
-    const customer = await Customer.findById(input.customerId);
-    if (!customer) throw new Error("Customer not found");
+    await validateCustomerExists(input.customerId);
   }
 
   // If items are updated, verify all exist
   if (input.orderItems) {
-    for (const item of input.orderItems) {
-      if (item.type === OrderItemType.PRODUCT) {
-        const prod = await Product.findById(item.itemId);
-        if (!prod) throw new Error(`Product not found: ${item.itemId}`);
-      } else if (item.type === OrderItemType.PACKAGE) {
-        const pkg = await Package.findById(item.itemId);
-        if (!pkg) throw new Error(`Package not found: ${item.itemId}`);
-      }
-    }
+    await validateOrderItemsExist(input.orderItems);
   }
 
   // Re-calculate billing totals if items, discount, or advance amount are updated
-  if (input.orderItems || input.discountAmount !== undefined || input.advanceAmount !== undefined) {
+  if (
+    input.orderItems ||
+    input.discountAmount !== undefined ||
+    input.advanceAmount !== undefined
+  ) {
     const items = input.orderItems || existingOrder.orderItems;
-    const discount = input.discountAmount !== undefined ? input.discountAmount : existingOrder.discountAmount;
-    const advance = input.advanceAmount !== undefined ? input.advanceAmount : existingOrder.advanceAmount;
+    const discount = input.discountAmount ?? existingOrder.discountAmount;
+    const advance = input.advanceAmount ?? existingOrder.advanceAmount;
 
     const totals = calculateOrderTotals(items, discount, advance);
     Object.assign(updateData, totals);
@@ -176,8 +148,10 @@ export const deleteOrder = async (id: string) => {
   const result = await Order.findByIdAndUpdate(
     id,
     { orderStatus: OrderStatus.CANCELLED },
-    { new: true }
-  ).populate("customerId").populate("orderItems.itemId");
+    { new: true },
+  )
+    .populate("customerId")
+    .populate("orderItems.itemId");
   if (!result) throw new Error("Order not found");
   return result;
 };

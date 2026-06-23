@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { User } from "../../models/user.model";
 import jwt from "jsonwebtoken";
 import { UserRole } from "../../constants/user.constant";
+import { JwtPayload } from "../../types/auth.types";
 
 export const registerAdmin = async (
   firstName: string,
@@ -41,6 +42,13 @@ export const login = async (email: string, password: string) => {
       const token = jwt.sign(payload, process.env.JWT_SECRET_KEY as string, {
         expiresIn: "24h",
       });
+      const refreshSecret =
+        process.env.JWT_REFRESH_SECRET_KEY ||
+        (process.env.JWT_SECRET_KEY as string) + "_refresh";
+      const refreshToken = jwt.sign(payload, refreshSecret, {
+        expiresIn: "7d",
+      });
+      user.refreshToken = refreshToken;
       user.lastLoginAt = new Date();
       await user.save();
       return {
@@ -51,6 +59,7 @@ export const login = async (email: string, password: string) => {
           lastName: user.lastName,
         },
         token,
+        refreshToken,
       };
     } else {
       throw new Error("Invalid email or password");
@@ -66,4 +75,47 @@ export const getUserById = async (id: string) => {
     throw new Error("User not found");
   }
   return user;
+};
+
+export const refreshTokens = async (refreshToken: string) => {
+  const refreshSecret =
+    process.env.JWT_REFRESH_SECRET_KEY ||
+    (process.env.JWT_SECRET_KEY as string) + "_refresh";
+
+  let decoded: JwtPayload;
+  try {
+    decoded = jwt.verify(refreshToken, refreshSecret) as JwtPayload;
+  } catch (error) {
+    throw new Error("Invalid or expired refresh token", { cause: error });
+  }
+
+  if (!decoded || typeof decoded === "string" || !decoded._id) {
+    throw new Error("Invalid refresh token payload");
+  }
+
+  const user = await User.findOne({ _id: decoded._id, isActive: true });
+  if (user?.refreshToken !== refreshToken) {
+    throw new Error("Invalid or expired refresh token");
+  }
+
+  const payload = {
+    _id: user._id.toString(),
+    role: user.role,
+  };
+
+  const token = jwt.sign(payload, process.env.JWT_SECRET_KEY as string, {
+    expiresIn: "24h",
+  });
+
+  const newRefreshToken = jwt.sign(payload, refreshSecret, {
+    expiresIn: "7d",
+  });
+
+  user.refreshToken = newRefreshToken;
+  await user.save();
+
+  return {
+    token,
+    refreshToken: newRefreshToken,
+  };
 };

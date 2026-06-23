@@ -12,6 +12,7 @@ export interface IUser extends Document {
   mustChangePassword: boolean;
   createdBy: mongoose.Types.ObjectId;
   lastLoginAt?: Date;
+  refreshToken?: string;
   updatedAt: Date;
   createdAt: Date;
 }
@@ -64,6 +65,10 @@ const UserSchema = new Schema<IUser>(
     },
     lastLoginAt: {
       type: Date,
+    },
+    refreshToken: {
+      type: String,
+      required: false,
     },
   },
   {
