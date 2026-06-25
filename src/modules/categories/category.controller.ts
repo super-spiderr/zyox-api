@@ -13,7 +13,7 @@ export const createCategoryController = async (
 ) => {
   try {
     const body = createCategorySchema.parse(request.body);
-    const category = await createCategory(body);
+    const category = await createCategory(body, request.user!.userId);
     return reply.status(201).send({
       success: true,
       message: "Category created successfully",

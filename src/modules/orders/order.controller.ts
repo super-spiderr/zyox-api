@@ -14,7 +14,7 @@ export const createOrderController = async (
 ) => {
   try {
     const body = createOrderSchema.parse(request.body);
-    const result = await createOrder(body, request.user?.userId as string);
+    const result = await createOrder(body, request.user!.userId);
     return reply.status(201).send({
       success: true,
       message: "Order created successfully",

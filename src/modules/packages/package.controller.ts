@@ -14,7 +14,7 @@ export const createPackageController = async (
 ) => {
   try {
     const body = createPackageSchema.parse(request.body);
-    const newPackage = await createPackage(body, request.user?.userId as string);
+    const newPackage = await createPackage(body, request.user!.userId);
     return reply.status(201).send({
       success: true,
       message: "Package created successfully",

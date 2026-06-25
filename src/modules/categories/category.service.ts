@@ -2,7 +2,10 @@ import { Category } from "../../models/category.model";
 import { CreateCategoryInput, UpdateCategoryInput } from "./category.schema";
 import { getNextSequenceValue } from "../../models/counter.model";
 
-export const createCategory = async (input: CreateCategoryInput) => {
+export const createCategory = async (
+  input: CreateCategoryInput,
+  createdById: string,
+) => {
   const isCategory = await Category.findOne({
     categoryName: input.categoryName,
   });
@@ -14,11 +17,15 @@ export const createCategory = async (input: CreateCategoryInput) => {
   const category = await Category.create({
     _id: categoryId,
     ...input,
-    createdBy: input.createdBy,
+    createdBy: createdById,
   });
   return category;
 };
-export const getCategories = async (page: number, limit: number, search?: string) => {
+export const getCategories = async (
+  page: number,
+  limit: number,
+  search?: string,
+) => {
   const query: any = {};
   if (search) {
     query.categoryName = { $regex: search, $options: "i" };
@@ -41,7 +48,7 @@ export const deleteCategory = async (categoryId: string) => {
   const category = await Category.findByIdAndUpdate(
     categoryId,
     { isActive: false },
-      { new: true },
+    { new: true },
   );
   if (!category) throw new Error("Category not found");
   return category;

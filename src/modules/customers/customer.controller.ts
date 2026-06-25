@@ -14,7 +14,7 @@ export const createCustomerController = async (
 ) => {
   try {
     const body = createCustomerSchema.parse(request.body);
-    const customer = await createCustomer(body, request.user?.userId!);
+    const customer = await createCustomer(body, request.user!.userId);
     return reply.status(201).send({
       success: true,
       message: "Customer created successfully",

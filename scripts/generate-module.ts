@@ -202,7 +202,7 @@ export const create${pascalName}Controller = async (
 ) => {
   try {
     const body = create${pascalName}Schema.parse(request.body);
-    const result = await create${pascalName}(body, request.user?.userId as string);
+    const result = await create${pascalName}(body, request.user!.userId);
     return reply.status(201).send({
       success: true,
       message: "${pascalName} created successfully",

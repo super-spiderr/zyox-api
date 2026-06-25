@@ -7,6 +7,7 @@ export const createCategorySchema = z.object({
     .max(40, "Name should not exceed 50 characters"),
   isActive: z.boolean().optional().default(true),
   imageUrl: z.string().optional(),
+  description: z.string().optional(),
   createdBy: z.string().optional(),
 });
 

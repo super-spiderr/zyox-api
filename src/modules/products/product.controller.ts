@@ -14,7 +14,7 @@ export const createProductController = async (
 ) => {
   try {
     const body = createProductSchema.parse(request.body);
-    const product = await createProduct(body, request.user?.userId as string);
+    const product = await createProduct(body, request.user!.userId);
     return reply.status(201).send({
       success: true,
       message: "Product created successfully",
