@@ -9,6 +9,7 @@ import categoryRoutes from "./modules/categories/category.route";
 import productRoutes from "./modules/products/product.route";
 import packageRoutes from "./modules/packages/package.route";
 import orderRoutes from "./modules/orders/order.route";
+import dashboardRoutes from "./modules/dashboard/dashboard.route";
 
 const app = Fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -51,6 +52,7 @@ app.register(categoryRoutes, { prefix: "/api/v1/category" });
 app.register(productRoutes, { prefix: "/api/v1/product" });
 app.register(packageRoutes, { prefix: "/api/v1/package" });
 app.register(orderRoutes, { prefix: "/api/v1/order" });
+app.register(dashboardRoutes, { prefix: "/api/v1/dashboard" });
 
 app.get("/", async () => {
   return { message: "Hello Zyox" };

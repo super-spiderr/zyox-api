@@ -1,5 +1,5 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 // Helper to convert string to kebab-case (e.g. productCategories -> product-categories)
 function toKebabCase(str: string): string {
@@ -22,7 +22,13 @@ function singularize(str: string): string {
   if (lower.endsWith("ies")) {
     return str.slice(0, -3) + "y";
   }
-  if (lower.endsWith("s") && !lower.endsWith("ss") && !lower.endsWith("us") && !lower.endsWith("is") && !lower.endsWith("as")) {
+  if (
+    lower.endsWith("s") &&
+    !lower.endsWith("ss") &&
+    !lower.endsWith("us") &&
+    !lower.endsWith("is") &&
+    !lower.endsWith("as")
+  ) {
     return str.slice(0, -1);
   }
   return str;
@@ -45,7 +51,8 @@ function main() {
   const singularInput = singularize(rawInput);
   const filePrefix = toKebabCase(singularInput);
   const pascalName = capitalize(singularInput);
-  const camelName = singularInput.charAt(0).toLowerCase() + singularInput.slice(1);
+  const camelName =
+    singularInput.charAt(0).toLowerCase() + singularInput.slice(1);
   const shortPrefix = singularInput.slice(0, 3).toUpperCase();
   const moduleTag = capitalize(rawInput);
 
@@ -54,7 +61,9 @@ function main() {
   const modelFilePath = path.join(modelDir, `${filePrefix}.model.ts`);
 
   if (fs.existsSync(targetDir)) {
-    console.error(`Error: Module folder already exists at: src/modules/${folderName}`);
+    console.error(
+      `Error: Module folder already exists at: src/modules/${folderName}`,
+    );
     process.exit(1);
   }
 
@@ -74,7 +83,11 @@ export type Create${pascalName}Input = z.infer<typeof create${pascalName}Schema>
 export const update${pascalName}Schema = create${pascalName}Schema.partial();
 export type Update${pascalName}Input = z.infer<typeof update${pascalName}Schema>;
 `;
-  fs.writeFileSync(path.join(targetDir, `${filePrefix}.schema.ts`), schemaContent, "utf8");
+  fs.writeFileSync(
+    path.join(targetDir, `${filePrefix}.schema.ts`),
+    schemaContent,
+    "utf8",
+  );
   console.log(`  Created: src/modules/${folderName}/${filePrefix}.schema.ts`);
 
   // 2. Generate Model
@@ -182,7 +195,11 @@ export const delete${pascalName} = async (id: string) => {
   return result;
 };
 `;
-  fs.writeFileSync(path.join(targetDir, `${filePrefix}.service.ts`), serviceContent, "utf8");
+  fs.writeFileSync(
+    path.join(targetDir, `${filePrefix}.service.ts`),
+    serviceContent,
+    "utf8",
+  );
   console.log(`  Created: src/modules/${folderName}/${filePrefix}.service.ts`);
 
   // 4. Generate Controller
@@ -307,8 +324,14 @@ export const delete${pascalName}Controller = async (
   }
 };
 `;
-  fs.writeFileSync(path.join(targetDir, `${filePrefix}.controller.ts`), controllerContent, "utf8");
-  console.log(`  Created: src/modules/${folderName}/${filePrefix}.controller.ts`);
+  fs.writeFileSync(
+    path.join(targetDir, `${filePrefix}.controller.ts`),
+    controllerContent,
+    "utf8",
+  );
+  console.log(
+    `  Created: src/modules/${folderName}/${filePrefix}.controller.ts`,
+  );
 
   const routeContent = `import { FastifyInstance } from "fastify";
 import { z } from "zod";
@@ -393,7 +416,11 @@ export default async function ${camelName}Routes(fastify: FastifyInstance) {
   );
 }
 `;
-  fs.writeFileSync(path.join(targetDir, `${filePrefix}.route.ts`), routeContent, "utf8");
+  fs.writeFileSync(
+    path.join(targetDir, `${filePrefix}.route.ts`),
+    routeContent,
+    "utf8",
+  );
   console.log(`  Created: src/modules/${folderName}/${filePrefix}.route.ts`);
 
   console.log("\nModule creation complete! 🎉\n");
