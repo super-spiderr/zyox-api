@@ -26,6 +26,7 @@ export const protectedRoute = async (
     request.user = {
       userId: decoded._id,
       role: decoded.role,
+      businessId: decoded.businessId,
     };
   } catch {
     return reply.status(401).send({
@@ -39,8 +40,8 @@ export const adminOnly = async (
   reply: FastifyReply,
 ) => {
   if (request?.user?.role !== UserRole.ADMIN) {
-    return reply.status(401).send({
-      message: "Unauthorized",
+    return reply.status(403).send({
+      message: "Forbidden",
     });
   }
 };

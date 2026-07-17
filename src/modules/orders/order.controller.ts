@@ -14,7 +14,11 @@ export const createOrderController = async (
 ) => {
   try {
     const body = createOrderSchema.parse(request.body);
-    const result = await createOrder(body, request.user!.userId);
+    const result = await createOrder(
+      body,
+      request.user!.userId,
+      request.user!.businessId,
+    );
     return reply.status(201).send({
       success: true,
       message: "Order created successfully",
@@ -38,7 +42,12 @@ export const getOrdersController = async (
       limit: number;
       search?: string;
     };
-    const { results, total } = await getOrders(page, limit, search);
+    const { results, total } = await getOrders(
+      request.user!.businessId,
+      page,
+      limit,
+      search,
+    );
     return reply.status(200).send({
       success: true,
       message: "Orders fetched successfully",
@@ -64,7 +73,7 @@ export const getOrderByIdController = async (
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const result = await getOrderById(id);
+    const result = await getOrderById(id, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Order fetched successfully",
@@ -85,7 +94,7 @@ export const updateOrderController = async (
   try {
     const { id } = request.params as { id: string };
     const body = updateOrderSchema.parse(request.body);
-    const result = await updateOrder(id, body);
+    const result = await updateOrder(id, body, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Order updated successfully",
@@ -105,7 +114,7 @@ export const deleteOrderController = async (
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const result = await deleteOrder(id);
+    const result = await deleteOrder(id, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Order deleted successfully",

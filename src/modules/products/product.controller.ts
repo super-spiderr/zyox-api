@@ -14,7 +14,11 @@ export const createProductController = async (
 ) => {
   try {
     const body = createProductSchema.parse(request.body);
-    const product = await createProduct(body, request.user!.userId);
+    const product = await createProduct(
+      body,
+      request.user!.userId,
+      request.user!.businessId,
+    );
     return reply.status(201).send({
       success: true,
       message: "Product created successfully",
@@ -39,7 +43,13 @@ export const getProductController = async (
       limit: number;
       search?: string;
     };
-    const { products, total } = await getProducts(page, limit, search, categoryId);
+    const { products, total } = await getProducts(
+      request.user!.businessId,
+      page,
+      limit,
+      search,
+      categoryId,
+    );
     return reply.status(200).send({
       success: true,
       message: "Products fetched successfully",
@@ -65,7 +75,7 @@ export const getProductByIdController = async (
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const product = await getProductById(id);
+    const product = await getProductById(id, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Product fetched successfully",
@@ -86,7 +96,7 @@ export const updateProductController = async (
   try {
     const { id } = request.params as { id: string };
     const body = updateProductSchema.parse(request.body);
-    const product = await updateProduct(id, body);
+    const product = await updateProduct(id, body, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Product updated successfully",
@@ -106,7 +116,7 @@ export const deleteProductController = async (
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const product = await deleteProduct(id);
+    const product = await deleteProduct(id, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Product deleted successfully",

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { VerticalType } from "../../constants/business.constant";
 
 export const registerSchema = z.object({
   firstName: z
@@ -7,6 +8,12 @@ export const registerSchema = z.object({
     .max(50, "Name should not exceed 50 characters"),
   email: z.email("Invalid email format"),
   password: z.string().min(8, "Password should be at least 8 characters"),
+  businessName: z
+    .string()
+    .min(2, "Business name should contain at least 2 characters")
+    .max(100, "Business name should not exceed 100 characters"),
+  verticalType: z.string().optional().default(VerticalType.CATERING),
+  language: z.string().optional().default("en"),
 });
 
 export const loginSchema = z.object({

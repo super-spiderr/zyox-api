@@ -8,6 +8,7 @@ export interface IPackageItem {
 
 export interface IPackage extends Document<string> {
   _id: string;
+  businessId: mongoose.Types.ObjectId;
   name: string;
   price: number;
   imageUrl?: string;
@@ -40,10 +41,14 @@ const PackageSchema = new Schema<IPackage>(
     _id: {
       type: String,
     },
+    businessId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
     name: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     price: {
@@ -85,5 +90,7 @@ const PackageSchema = new Schema<IPackage>(
     collection: "z_packages",
   }
 );
+
+PackageSchema.index({ businessId: 1, name: 1 }, { unique: true });
 
 export const Package = mongoose.model<IPackage>("Package", PackageSchema);

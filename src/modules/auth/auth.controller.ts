@@ -8,7 +8,14 @@ export const register = async (
 ) => {
   try {
     const body = registerSchema.parse(request.body);
-    const user = await registerAdmin(body.firstName, body.email, body.password);
+    const user = await registerAdmin(
+      body.firstName,
+      body.email,
+      body.password,
+      body.businessName,
+      body.verticalType,
+      body.language,
+    );
     return reply.status(201).send({
       success: true,
       message: "Admin registered successfully",
@@ -17,6 +24,7 @@ export const register = async (
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        businessId: user.businessId,
       },
     });
   } catch (error) {

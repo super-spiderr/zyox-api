@@ -14,7 +14,11 @@ export const createCustomerController = async (
 ) => {
   try {
     const body = createCustomerSchema.parse(request.body);
-    const customer = await createCustomer(body, request.user!.userId);
+    const customer = await createCustomer(
+      body,
+      request.user!.userId,
+      request.user!.businessId,
+    );
     return reply.status(201).send({
       success: true,
       message: "Customer created successfully",
@@ -41,14 +45,19 @@ export const getCustomersController = async (
     };
 
     if (id) {
-      const customer = await getCustomersById(id);
+      const customer = await getCustomersById(id, request.user!.businessId);
       return reply.status(200).send({
         success: true,
         data: customer,
       });
     }
 
-    const { customers, total } = await getCustomers(page, limit, search);
+    const { customers, total } = await getCustomers(
+      request.user!.businessId,
+      page,
+      limit,
+      search,
+    );
     return reply.status(200).send({
       success: true,
       data: customers,
@@ -73,7 +82,7 @@ export const getCustomerByIdController = async (
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const customer = await getCustomersById(id);
+    const customer = await getCustomersById(id, request.user!.businessId);
 
     return reply.status(200).send({
       success: true,
@@ -93,7 +102,7 @@ export const updateCustomerController = async (
   try {
     const { id } = request.params as { id: string };
     const body = updateCustomerSchema.parse(request.body);
-    const customer = await updateCustomer(id, body);
+    const customer = await updateCustomer(id, body, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Customer updated successfully",
@@ -112,7 +121,7 @@ export const deleteCustomerController = async (
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const customer = await deleteCustomer(id);
+    const customer = await deleteCustomer(id, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Customer deleted successfully",

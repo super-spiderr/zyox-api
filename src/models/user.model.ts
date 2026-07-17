@@ -8,6 +8,7 @@ export interface IUser extends Document {
   phoneNumber?: string;
   password: string;
   role: UserRole;
+  businessId: mongoose.Types.ObjectId;
   isActive: boolean;
   mustChangePassword: boolean;
   createdBy: mongoose.Types.ObjectId;
@@ -49,6 +50,11 @@ const UserSchema = new Schema<IUser>(
       type: String,
       enum: Object.values(UserRole),
       default: UserRole.STAFF,
+    },
+    businessId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
     },
     isActive: {
       type: Boolean,

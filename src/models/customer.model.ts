@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { CustomerType } from "../constants/customer.constant";
 
 export interface ICustomer extends Document {
+  businessId: mongoose.Types.ObjectId;
   customerName: string;
   phoneNumber: string;
   email?: string;
@@ -16,6 +17,11 @@ export interface ICustomer extends Document {
 }
 const CustomerSchema = new mongoose.Schema(
   {
+    businessId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
     customerName: {
       type: String,
       required: true,
@@ -60,4 +66,7 @@ const CustomerSchema = new mongoose.Schema(
     collection: "z_customers",
   },
 );
+
+CustomerSchema.index({ businessId: 1, phoneNumber: 1 }, { unique: true });
+
 export const Customer = mongoose.model<ICustomer>("Customer", CustomerSchema);

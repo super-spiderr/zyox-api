@@ -16,3 +16,9 @@ export enum OrderItemType {
   PACKAGE = "PACKAGE",
   PRODUCT = "PRODUCT",
 }
+
+export enum OrderSource {
+  WHATSAPP = "WHATSAPP",
+  CALL = "CALL",
+  WALK_IN = "WALK_IN",
+}

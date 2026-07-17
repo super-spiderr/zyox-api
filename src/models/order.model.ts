@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { OrderStatus, PaymentStatus, OrderItemType } from "../constants/order.constant";
+import { OrderStatus, PaymentStatus, OrderItemType, OrderSource } from "../constants/order.constant";
 
 export interface IOrderItem {
   type: OrderItemType;
@@ -13,10 +13,11 @@ export interface IOrderItem {
 
 export interface IOrder extends Document {
   orderNumber: string;
+  businessId: mongoose.Types.ObjectId;
   customerId: string;
-  eventName: string;
-  eventDate: string;
-  guestCount: number;
+  deliveryDate: Date;
+  attributes: Record<string, unknown>;
+  orderSource?: OrderSource;
   orderItems: IOrderItem[];
   subTotal: number;
   discountAmount: number;
@@ -81,38 +82,39 @@ const OrderSchema = new Schema<IOrder>(
       required: true,
       unique: true,
     },
+    businessId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
     customerId: {
       type: String,
       ref: "Customer",
       required: true,
     },
-    eventName: {
-      type: String,
+    deliveryDate: {
+      type: Date,
       required: true,
+      index: true,
     },
-    eventDate: {
-      type: String,
-      required: true,
+    attributes: {
+      type: Schema.Types.Mixed,
+      default: {},
     },
-    guestCount: {
-      type: Number,
-      required: true,
-      min: [1, "Guest count must be at least 1"],
+    orderSource: {
+      type: String,
+      enum: Object.values(OrderSource),
+      required: false,
     },
     orderItems: {
       type: [OrderItemSchema],
-      required: true,
-      validate: {
-        validator: function (v: any[]) {
-          return v && v.length > 0;
-        },
-        message: "An order must contain at least one item",
-      },
+      default: [],
     },
     subTotal: {
       type: Number,
       required: true,
       min: [0, "SubTotal must be at least 0"],
+      default: 0,
     },
     discountAmount: {
       type: Number,
@@ -123,6 +125,7 @@ const OrderSchema = new Schema<IOrder>(
       type: Number,
       required: true,
       min: [0, "TotalAmount must be at least 0"],
+      default: 0,
     },
     advanceAmount: {
       type: Number,
@@ -132,6 +135,7 @@ const OrderSchema = new Schema<IOrder>(
     balanceAmount: {
       type: Number,
       required: true,
+      default: 0,
     },
     paymentStatus: {
       type: String,

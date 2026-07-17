@@ -4,23 +4,64 @@ import { getNextSequenceValue } from "../../models/counter.model";
 import { Customer } from "../../models/customer.model";
 import { Product } from "../../models/product.model";
 import { Package } from "../../models/package.model";
+import { Business } from "../../models/business.model";
 import { OrderItemType, OrderStatus } from "../../constants/order.constant";
+import { CustomerType } from "../../constants/customer.constant";
 import { calculateOrderTotals } from "./order.helper";
+import { validateOrderAttributes } from "./order.attributes.schema";
+import { escapeRegex } from "../../utils/regex.util";
 
-const validateCustomerExists = async (customerId: string) => {
-  const customer = await Customer.findById(customerId);
+const getBusinessVerticalType = async (businessId: string) => {
+  const business = await Business.findById(businessId);
+  if (!business) throw new Error("Business not found");
+  return business.verticalType;
+};
+
+const validateCustomerExists = async (customerId: string, businessId: string) => {
+  const customer = await Customer.findOne({ _id: customerId, businessId });
   if (!customer) throw new Error("Customer not found");
+  return customer;
+};
+
+const resolveCustomerId = async (
+  input: Pick<CreateOrderInput, "customerId" | "customerName" | "customerPhone">,
+  businessId: string,
+  createdById: string,
+) => {
+  if (input.customerId) {
+    const customer = await validateCustomerExists(input.customerId, businessId);
+    return customer._id.toString();
+  }
+
+  // customerName + customerPhone are required by createOrderSchema's refine
+  // when customerId is absent, so both are guaranteed present here.
+  const existing = await Customer.findOne({
+    businessId,
+    phoneNumber: input.customerPhone,
+  });
+  if (existing) return existing._id.toString();
+
+  const created = await Customer.create({
+    businessId,
+    customerName: input.customerName,
+    phoneNumber: input.customerPhone,
+    customerType: CustomerType.INDIVIDUAL,
+    isActive: true,
+    createdBy: createdById,
+  });
+  return created._id.toString();
 };
 
 const validateOrderItemsExist = async (
   items: Array<{ type: OrderItemType; itemId: string }>,
+  businessId: string,
 ) => {
   for (const item of items) {
     if (item.type === OrderItemType.PRODUCT) {
-      const prod = await Product.findById(item.itemId);
+      const prod = await Product.findOne({ _id: item.itemId, businessId });
       if (!prod) throw new Error(`Product not found: ${item.itemId}`);
     } else if (item.type === OrderItemType.PACKAGE) {
-      const pkg = await Package.findById(item.itemId);
+      const pkg = await Package.findOne({ _id: item.itemId, businessId });
       if (!pkg) throw new Error(`Package not found: ${item.itemId}`);
     }
   }
@@ -29,33 +70,39 @@ const validateOrderItemsExist = async (
 export const createOrder = async (
   input: CreateOrderInput,
   createdById: string,
+  businessId: string,
 ) => {
-  // 1. Verify customer exists
-  await validateCustomerExists(input.customerId);
+  // 1. Resolve customer (existing by id, existing by phone, or auto-create)
+  const customerId = await resolveCustomerId(input, businessId, createdById);
 
-  // 2. Verify all items exist
-  await validateOrderItemsExist(input.orderItems);
+  // 2. Verify all items exist and belong to this business
+  await validateOrderItemsExist(input.orderItems, businessId);
 
-  // 3. Generate sequential order number
+  // 3. Validate attributes against the business's vertical schema
+  const verticalType = await getBusinessVerticalType(businessId);
+  const attributes = validateOrderAttributes(verticalType, input.attributes);
+
+  // 4. Generate sequential order number
   const currentYear = new Date().getFullYear();
   const count = await getNextSequenceValue(`Order_${currentYear}`);
   const paddedCount = String(count).padStart(4, "0");
   const orderNumber = `ZYX-${currentYear}-${paddedCount}`;
 
-  // 4. Calculate billing totals
+  // 5. Calculate billing totals
   const totals = calculateOrderTotals(
     input.orderItems,
     input.discountAmount || 0,
     input.advanceAmount || 0,
   );
 
-  // 5. Create Order
+  // 6. Create Order
   const order = await Order.create({
     orderNumber,
-    customerId: input.customerId,
-    eventName: input.eventName,
-    eventDate: input.eventDate,
-    guestCount: input.guestCount,
+    businessId,
+    customerId,
+    deliveryDate: new Date(input.deliveryDate),
+    attributes,
+    orderSource: input.orderSource,
     ...totals,
     paymentStatus: input.paymentStatus,
     orderStatus: input.orderStatus,
@@ -70,21 +117,24 @@ export const createOrder = async (
 };
 
 export const getOrders = async (
+  businessId: string,
   page: number,
   limit: number,
   search?: string,
 ) => {
-  const query: any = {};
+  const query: any = { businessId };
   if (search) {
+    const safeSearch = escapeRegex(search);
     // Search by customer name
     const matchingCustomers = await Customer.find({
-      customerName: { $regex: search, $options: "i" },
+      businessId,
+      customerName: { $regex: safeSearch, $options: "i" },
     }).select("_id");
     const customerIds = matchingCustomers.map((c) => c._id);
 
     query.$or = [
-      { orderNumber: { $regex: search, $options: "i" } },
-      { eventName: { $regex: search, $options: "i" } },
+      { orderNumber: { $regex: safeSearch, $options: "i" } },
+      { "attributes.eventName": { $regex: safeSearch, $options: "i" } },
       { customerId: { $in: customerIds } },
     ];
   }
@@ -100,28 +150,41 @@ export const getOrders = async (
   return { results, total };
 };
 
-export const getOrderById = async (id: string) => {
-  const order = await Order.findById(id)
+export const getOrderById = async (id: string, businessId: string) => {
+  const order = await Order.findOne({ _id: id, businessId })
     .populate("customerId")
     .populate("orderItems.itemId");
   if (!order) throw new Error("Order not found");
   return order;
 };
 
-export const updateOrder = async (id: string, input: UpdateOrderInput) => {
-  const existingOrder = await Order.findById(id);
+export const updateOrder = async (
+  id: string,
+  input: UpdateOrderInput,
+  businessId: string,
+) => {
+  const existingOrder = await Order.findOne({ _id: id, businessId });
   if (!existingOrder) throw new Error("Order not found");
 
   const updateData: any = { ...input };
-
-  // If customer is updated, verify it exists
-  if (input.customerId) {
-    await validateCustomerExists(input.customerId);
+  if (input.deliveryDate) {
+    updateData.deliveryDate = new Date(input.deliveryDate);
   }
 
-  // If items are updated, verify all exist
+  // If customer is updated, verify it belongs to this business
+  if (input.customerId) {
+    await validateCustomerExists(input.customerId, businessId);
+  }
+
+  // If items are updated, verify all exist and belong to this business
   if (input.orderItems) {
-    await validateOrderItemsExist(input.orderItems);
+    await validateOrderItemsExist(input.orderItems, businessId);
+  }
+
+  // If attributes are updated, validate against the business's vertical schema
+  if (input.attributes) {
+    const verticalType = await getBusinessVerticalType(businessId);
+    updateData.attributes = validateOrderAttributes(verticalType, input.attributes);
   }
 
   // Re-calculate billing totals if items, discount, or advance amount are updated
@@ -138,15 +201,17 @@ export const updateOrder = async (id: string, input: UpdateOrderInput) => {
     Object.assign(updateData, totals);
   }
 
-  const result = await Order.findByIdAndUpdate(id, updateData, { new: true })
+  const result = await Order.findOneAndUpdate({ _id: id, businessId }, updateData, {
+    new: true,
+  })
     .populate("customerId")
     .populate("orderItems.itemId");
   return result;
 };
 
-export const deleteOrder = async (id: string) => {
-  const result = await Order.findByIdAndUpdate(
-    id,
+export const deleteOrder = async (id: string, businessId: string) => {
+  const result = await Order.findOneAndUpdate(
+    { _id: id, businessId },
     { orderStatus: OrderStatus.CANCELLED },
     { new: true },
   )

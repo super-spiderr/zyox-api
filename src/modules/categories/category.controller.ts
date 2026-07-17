@@ -13,7 +13,11 @@ export const createCategoryController = async (
 ) => {
   try {
     const body = createCategorySchema.parse(request.body);
-    const category = await createCategory(body, request.user!.userId);
+    const category = await createCategory(
+      body,
+      request.user!.userId,
+      request.user!.businessId,
+    );
     return reply.status(201).send({
       success: true,
       message: "Category created successfully",
@@ -37,7 +41,12 @@ export const getCategoryController = async (
       limit: number;
       search?: string;
     };
-    const { categories, total } = await getCategories(page, limit, search);
+    const { categories, total } = await getCategories(
+      request.user!.businessId,
+      page,
+      limit,
+      search,
+    );
     return reply.status(200).send({
       success: true,
       message: "Categories fetched successfully",
@@ -64,7 +73,7 @@ export const updateCategoryController = async (
   try {
     const { id } = request.params as { id: string };
     const body = updateCategorySchema.parse(request.body);
-    const category = await updateCategory(id, body);
+    const category = await updateCategory(id, body, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Category updated successfully",
@@ -84,7 +93,7 @@ export const deleteCategoryController = async (
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const category = await deleteCategory(id);
+    const category = await deleteCategory(id, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Category deleted successfully",

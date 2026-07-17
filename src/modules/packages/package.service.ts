@@ -1,12 +1,14 @@
 import { Package } from "../../models/package.model";
 import { CreatePackageInput, UpdatePackageInput } from "./package.schema";
 import { getNextSequenceValue } from "../../models/counter.model";
+import { escapeRegex } from "../../utils/regex.util";
 
 export const createPackage = async (
   input: CreatePackageInput,
-  createdById: string
+  createdById: string,
+  businessId: string,
 ) => {
-  const isPackage = await Package.findOne({ name: input.name });
+  const isPackage = await Package.findOne({ businessId, name: input.name });
   if (isPackage) throw new Error("Package already exists");
 
   const count = await getNextSequenceValue("Package");
@@ -15,19 +17,21 @@ export const createPackage = async (
   const newPackage = await Package.create({
     _id: packageId,
     ...input,
+    businessId,
     createdBy: createdById,
   });
   return newPackage;
 };
 
 export const getPackages = async (
+  businessId: string,
   page: number,
   limit: number,
   search?: string,
 ) => {
-  const query: any = {};
+  const query: any = { businessId };
   if (search) {
-    query.name = { $regex: search, $options: "i" };
+    query.name = { $regex: escapeRegex(search), $options: "i" };
   }
 
   const total = await Package.countDocuments(query);
@@ -40,23 +44,27 @@ export const getPackages = async (
   return { packages, total };
 };
 
-export const getPackageById = async (id: string) => {
-  const pkg = await Package.findById(id).populate("items.itemId");
+export const getPackageById = async (id: string, businessId: string) => {
+  const pkg = await Package.findOne({ _id: id, businessId }).populate("items.itemId");
   if (!pkg) throw new Error("Package not found");
   return pkg;
 };
 
-export const updatePackage = async (id: string, input: UpdatePackageInput) => {
-  const pkg = await Package.findByIdAndUpdate(id, input, {
+export const updatePackage = async (
+  id: string,
+  input: UpdatePackageInput,
+  businessId: string,
+) => {
+  const pkg = await Package.findOneAndUpdate({ _id: id, businessId }, input, {
     new: true,
   }).populate("items.itemId");
   if (!pkg) throw new Error("Package not found");
   return pkg;
 };
 
-export const deletePackage = async (id: string) => {
-  const pkg = await Package.findByIdAndUpdate(
-    id,
+export const deletePackage = async (id: string, businessId: string) => {
+  const pkg = await Package.findOneAndUpdate(
+    { _id: id, businessId },
     { isActive: false },
     { new: true }
   ).populate("items.itemId");

@@ -2,6 +2,7 @@ import mongoose, { Document } from "mongoose";
 
 export interface ICategory extends Document<string> {
   _id: string;
+  businessId: mongoose.Types.ObjectId;
   categoryName: string;
   isActive: boolean;
   imageUrl?: string;
@@ -15,6 +16,11 @@ const CategorySchema = new mongoose.Schema(
   {
     _id: {
       type: String,
+    },
+    businessId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
     },
     categoryName: {
       type: String,

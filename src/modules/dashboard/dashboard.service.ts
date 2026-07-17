@@ -6,7 +6,10 @@ import { Order } from "../../models/order.model";
 import { OrderStatus } from "../../constants/order.constant";
 import { DashboardQueryInput } from "./dashboard.schema";
 
-export const getDashboardStats = async (queryInput: DashboardQueryInput) => {
+export const getDashboardStats = async (
+  businessId: string,
+  queryInput: DashboardQueryInput,
+) => {
   const { startDate, endDate } = queryInput;
 
   // 1. Fetch total counts for entities (active ones)
@@ -16,14 +19,14 @@ export const getDashboardStats = async (queryInput: DashboardQueryInput) => {
     totalPackagesCount,
     totalCategoriesCount,
   ] = await Promise.all([
-    Customer.countDocuments({ isActive: { $ne: false } }),
-    Product.countDocuments({ isActive: { $ne: false } }),
-    Package.countDocuments({ isActive: { $ne: false } }),
-    Category.countDocuments({ isActive: { $ne: false } }),
+    Customer.countDocuments({ businessId, isActive: { $ne: false } }),
+    Product.countDocuments({ businessId, isActive: { $ne: false } }),
+    Package.countDocuments({ businessId, isActive: { $ne: false } }),
+    Category.countDocuments({ businessId, isActive: { $ne: false } }),
   ]);
 
   // 2. Build order query based on optional dates
-  const orderQuery: any = {};
+  const orderQuery: any = { businessId };
   if (startDate || endDate) {
     orderQuery.createdAt = {};
     if (startDate) {

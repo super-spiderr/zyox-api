@@ -3,6 +3,7 @@ import { ProductType } from "../constants/product.constant";
 
 export interface IProducts extends Document<string> {
   _id: string;
+  businessId: mongoose.Types.ObjectId;
   productName: string;
   categoryIds: string[];
   isActive: boolean;
@@ -19,6 +20,11 @@ const ProductSchema = new mongoose.Schema(
   {
     _id: {
       type: String,
+    },
+    businessId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      index: true,
     },
     productName: {
       type: String,

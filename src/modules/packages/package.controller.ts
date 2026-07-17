@@ -14,7 +14,11 @@ export const createPackageController = async (
 ) => {
   try {
     const body = createPackageSchema.parse(request.body);
-    const newPackage = await createPackage(body, request.user!.userId);
+    const newPackage = await createPackage(
+      body,
+      request.user!.userId,
+      request.user!.businessId,
+    );
     return reply.status(201).send({
       success: true,
       message: "Package created successfully",
@@ -38,7 +42,12 @@ export const getPackagesController = async (
       limit: number;
       search?: string;
     };
-    const { packages, total } = await getPackages(page, limit, search);
+    const { packages, total } = await getPackages(
+      request.user!.businessId,
+      page,
+      limit,
+      search,
+    );
     return reply.status(200).send({
       success: true,
       message: "Packages fetched successfully",
@@ -64,7 +73,7 @@ export const getPackageByIdController = async (
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const pkg = await getPackageById(id);
+    const pkg = await getPackageById(id, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Package fetched successfully",
@@ -85,7 +94,7 @@ export const updatePackageController = async (
   try {
     const { id } = request.params as { id: string };
     const body = updatePackageSchema.parse(request.body);
-    const pkg = await updatePackage(id, body);
+    const pkg = await updatePackage(id, body, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Package updated successfully",
@@ -105,7 +114,7 @@ export const deletePackageController = async (
 ) => {
   try {
     const { id } = request.params as { id: string };
-    const pkg = await deletePackage(id);
+    const pkg = await deletePackage(id, request.user!.businessId);
     return reply.status(200).send({
       success: true,
       message: "Package deleted successfully",

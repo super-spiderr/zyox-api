@@ -8,7 +8,7 @@ export const getDashboardController = async (
 ) => {
   try {
     const query = dashboardQuerySchema.parse(request.query);
-    const result = await getDashboardStats(query);
+    const result = await getDashboardStats(request.user!.businessId, query);
     return reply.status(200).send({
       success: true,
       message: "Dashboard statistics fetched successfully",

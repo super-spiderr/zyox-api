@@ -1,11 +1,14 @@
 import { CreateCustomerInput, UpdateCustomerInput } from "./customer.schema";
 import { Customer } from "../../models/customer.model";
+import { escapeRegex } from "../../utils/regex.util";
 
 export const createCustomer = async (
   input: CreateCustomerInput,
   userId: string,
+  businessId: string,
 ) => {
   const existingCustomer = await Customer.findOne({
+    businessId,
     phoneNumber: input.phoneNumber,
   });
 
@@ -15,19 +18,26 @@ export const createCustomer = async (
 
   const customer = await Customer.create({
     ...input,
+    businessId,
     createdBy: userId,
   });
 
   return customer;
 };
 
-export const getCustomers = async (page: number, limit: number, search?: string) => {
-  const query: any = {};
+export const getCustomers = async (
+  businessId: string,
+  page: number,
+  limit: number,
+  search?: string,
+) => {
+  const query: any = { businessId };
   if (search) {
+    const safeSearch = escapeRegex(search);
     query.$or = [
-      { customerName: { $regex: search, $options: "i" } },
-      { phoneNumber: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
+      { customerName: { $regex: safeSearch, $options: "i" } },
+      { phoneNumber: { $regex: safeSearch, $options: "i" } },
+      { email: { $regex: safeSearch, $options: "i" } },
     ];
   }
 
@@ -40,15 +50,15 @@ export const getCustomers = async (page: number, limit: number, search?: string)
   return { customers, total };
 };
 
-export const getCustomersById = async (customerId: string) => {
-  const customers = await Customer.findById(customerId);
+export const getCustomersById = async (customerId: string, businessId: string) => {
+  const customers = await Customer.findOne({ _id: customerId, businessId });
   if (!customers) throw new Error("Customer not found");
   return customers;
 };
 
-export const deleteCustomer = async (customerId: string) => {
-  const customer = await Customer.findByIdAndUpdate(
-    customerId,
+export const deleteCustomer = async (customerId: string, businessId: string) => {
+  const customer = await Customer.findOneAndUpdate(
+    { _id: customerId, businessId },
     { isActive: false },
     { new: true }
   );
@@ -59,11 +69,13 @@ export const deleteCustomer = async (customerId: string) => {
 export const updateCustomer = async (
   customerId: string,
   input: UpdateCustomerInput,
+  businessId: string,
 ) => {
-  const customer = await Customer.findByIdAndUpdate(customerId, input, {
-    new: true,
-  });
+  const customer = await Customer.findOneAndUpdate(
+    { _id: customerId, businessId },
+    input,
+    { new: true },
+  );
   if (!customer) throw new Error("Customer not found");
   return customer;
 };
-
