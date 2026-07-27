@@ -5,6 +5,7 @@ import {
   createPackageController,
   deletePackageController,
   getPackageByIdController,
+  getPackageProductsController,
   getPackagesController,
   updatePackageController,
 } from "./package.controller";
@@ -49,6 +50,20 @@ export default async function packageRoutes(fastify: FastifyInstance) {
       },
     },
     getPackageByIdController,
+  );
+  fastify.get(
+    "/:id/products",
+    {
+      preHandler: [protectedRoute],
+      schema: {
+        tags: ["Packages"],
+        security: [{ bearerAuth: [] }],
+        params: z.object({
+          id: z.string(),
+        }),
+      },
+    },
+    getPackageProductsController,
   );
   fastify.put(
     "/:id",

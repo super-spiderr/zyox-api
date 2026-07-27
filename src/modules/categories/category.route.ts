@@ -5,6 +5,7 @@ import {
   createCategoryController,
   deleteCategoryController,
   getCategoryController,
+  getCategoryProductsAndPackagesController,
   updateCategoryController,
 } from "./category.controller";
 import { createCategorySchema, updateCategorySchema } from "./category.schema";
@@ -34,6 +35,20 @@ export default async function categoryRoutes(fastify: FastifyInstance) {
       },
     },
     getCategoryController,
+  );
+  fastify.get(
+    "/:id/products-packages",
+    {
+      preHandler: [protectedRoute],
+      schema: {
+        tags: ["Categories"],
+        security: [{ bearerAuth: [] }],
+        params: z.object({
+          id: z.string(),
+        }),
+      },
+    },
+    getCategoryProductsAndPackagesController,
   );
   fastify.put(
     "/:id",

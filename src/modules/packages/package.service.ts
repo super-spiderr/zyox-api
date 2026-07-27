@@ -50,6 +50,12 @@ export const getPackageById = async (id: string, businessId: string) => {
   return pkg;
 };
 
+export const getProductsByPackageId = async (id: string, businessId: string) => {
+  const pkg = await Package.findOne({ _id: id, businessId }).populate("items.itemId");
+  if (!pkg) throw new Error("Package not found");
+  return pkg.items.map((item) => item.itemId);
+};
+
 export const updatePackage = async (
   id: string,
   input: UpdatePackageInput,

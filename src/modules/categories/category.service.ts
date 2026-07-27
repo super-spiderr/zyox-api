@@ -1,4 +1,6 @@
 import { Category } from "../../models/category.model";
+import { Product } from "../../models/product.model";
+import { Package } from "../../models/package.model";
 import { CreateCategoryInput, UpdateCategoryInput } from "./category.schema";
 import { getNextSequenceValue } from "../../models/counter.model";
 import { escapeRegex } from "../../utils/regex.util";
@@ -48,6 +50,23 @@ export const getCategoriesById = async (categoryId: string, businessId: string) 
   const category = await Category.findOne({ _id: categoryId, businessId });
   if (!category) throw new Error("Category not found");
   return category;
+};
+export const getProductsAndPackagesByCategoryId = async (
+  categoryId: string,
+  businessId: string,
+) => {
+  const category = await Category.findOne({ _id: categoryId, businessId });
+  if (!category) throw new Error("Category not found");
+
+  const products = await Product.find({ businessId, categoryIds: categoryId });
+  const productIds = products.map((product) => product._id);
+
+  const packages = await Package.find({
+    businessId,
+    "items.itemId": { $in: productIds },
+  }).populate("items.itemId");
+
+  return { category, products, packages };
 };
 export const deleteCategory = async (categoryId: string, businessId: string) => {
   const category = await Category.findOneAndUpdate(

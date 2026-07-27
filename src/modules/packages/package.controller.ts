@@ -5,6 +5,7 @@ import {
   deletePackage,
   getPackageById,
   getPackages,
+  getProductsByPackageId,
   updatePackage,
 } from "./package.service";
 
@@ -78,6 +79,26 @@ export const getPackageByIdController = async (
       success: true,
       message: "Package fetched successfully",
       data: pkg,
+    });
+  } catch (error) {
+    return reply.status(400).send({
+      success: false,
+      message: error instanceof Error ? error.message : "Something went wrong",
+    });
+  }
+};
+
+export const getPackageProductsController = async (
+  request: FastifyRequest,
+  reply: FastifyReply
+) => {
+  try {
+    const { id } = request.params as { id: string };
+    const products = await getProductsByPackageId(id, request.user!.businessId);
+    return reply.status(200).send({
+      success: true,
+      message: "Products fetched successfully",
+      data: products,
     });
   } catch (error) {
     return reply.status(400).send({

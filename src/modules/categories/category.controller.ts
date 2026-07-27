@@ -3,6 +3,7 @@ import {
   createCategory,
   deleteCategory,
   getCategories,
+  getProductsAndPackagesByCategoryId,
   updateCategory,
 } from "./category.service";
 import { createCategorySchema, updateCategorySchema } from "./category.schema";
@@ -57,6 +58,29 @@ export const getCategoryController = async (
         limit,
         totalPages: Math.ceil(total / limit),
       },
+    });
+  } catch (error) {
+    return reply.status(400).send({
+      success: false,
+      message: error instanceof Error ? error.message : "Something went wrong",
+    });
+  }
+};
+
+export const getCategoryProductsAndPackagesController = async (
+  request: FastifyRequest,
+  reply: FastifyReply,
+) => {
+  try {
+    const { id } = request.params as { id: string };
+    const { products, packages } = await getProductsAndPackagesByCategoryId(
+      id,
+      request.user!.businessId,
+    );
+    return reply.status(200).send({
+      success: true,
+      message: "Products and packages fetched successfully",
+      data: { products, packages },
     });
   } catch (error) {
     return reply.status(400).send({
